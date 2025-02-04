@@ -13,39 +13,22 @@ M.options = {
 
 local function request_commit_message(diff)
     local template = [[
-## Prefixes
-:fix: Bug fixes
-:hotfix: Critical bug fixes
-:add: New features or files
-:feat: Feature implementation
-:update: Non-bug improvements
-:change: Specification-based changes
-:docs: Documentation updates
-:disable: Feature disable
-:remove: Deleting files or code
-:rename: Renaming files
-:upgrade: Version upgrades
-:revert: Reverting changes
-:style: Code formatting & styling
-:refactor: Code refactoring
-:test: Adding or fixing tests
-:chore: Build tools & auto-generated commits
-
-## Emojis
-🐛 :bug: Bug fixes
-✨ :sparkles: Feature enhancements
-🎨 :art: UI/UX design changes
-🚧 :construction: Work in progress (WIP)
-📝 :memo: Documentation updates
-♻️ :recycle: Code refactoring
-🔥 :fire: Removing unused code/features
-💚 :green_heart: CI & test improvements
-👕 :shirt: Linting & code style fixes
-🚀 :rocket: Performance improvements
-🆙 :up: Dependency updates
-👮 :cop: Security enhancements
-⚙ :gear: Configuration changes
-📚 :books: Documentation updates
+🐛 fix: Bug fixes
+🚑 hotfix: Critical bug fixes
+✨ add: New features or files
+🌟 feat: Feature implementation
+🔧 update: Non-bug improvements
+⚡ change: Specification-based changes
+📖 docs: Documentation updates
+🚫 disable: Feature disable
+🔥 remove: Deleting files or code
+📛 rename: Renaming files
+🆙 upgrade: Version upgrades
+⏪ revert: Reverting changes
+🎨 style: Code formatting & styling
+♻️ refactor: Code refactoring
+🧪 test: Adding or fixing tests
+🛠 chore: Build tools & auto-generated commits
 ]]
 
     local payload = {
