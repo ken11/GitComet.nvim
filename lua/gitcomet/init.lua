@@ -3,7 +3,7 @@ local curl = require("plenary.curl")
 
 local aws_keys = os.getenv("BEDROCK_KEYS")
 local aws_access_key, aws_secret_key, aws_region = aws_keys:match("([^,]+),([^,]+),([^,]+)")
-local service = "bedrock-runtime"
+local service = "bedrock"
 
 M.options = {
     model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0",
@@ -12,27 +12,66 @@ M.options = {
 }
 
 local function request_commit_message(diff)
+    local template = [[
+## Prefixes
+:fix: Bug fixes
+:hotfix: Critical bug fixes
+:add: New features or files
+:feat: Feature implementation
+:update: Non-bug improvements
+:change: Specification-based changes
+:docs: Documentation updates
+:disable: Feature disable
+:remove: Deleting files or code
+:rename: Renaming files
+:upgrade: Version upgrades
+:revert: Reverting changes
+:style: Code formatting & styling
+:refactor: Code refactoring
+:test: Adding or fixing tests
+:chore: Build tools & auto-generated commits
+
+## Emojis
+🐛 :bug: Bug fixes
+✨ :sparkles: Feature enhancements
+🎨 :art: UI/UX design changes
+🚧 :construction: Work in progress (WIP)
+📝 :memo: Documentation updates
+♻️ :recycle: Code refactoring
+🔥 :fire: Removing unused code/features
+💚 :green_heart: CI & test improvements
+👕 :shirt: Linting & code style fixes
+🚀 :rocket: Performance improvements
+🆙 :up: Dependency updates
+👮 :cop: Security enhancements
+⚙ :gear: Configuration changes
+📚 :books: Documentation updates
+]]
+
     local payload = {
+        anthropic_version = "bedrock-2023-05-31",
         system = M.options.system_prompt,
         messages = {
-            { role = "user", content = "以下のGitDiffは現在の git diff コマンドの結果です。このGitDiffの内容に基づいて適切なコミットメッセージを考えてください。\n\n<GitDiff>\n" .. diff .. "\n</GitDiff>" }
+            { role = "user", content = "以下のGitDiffは現在の git diff コマンドの結果です。このGitDiffの内容に基づいて適切なコミットメッセージを考えてください。\nまた、コミットメッセージはMessageTemplateを参考にして書いてください。\n\n<MessageTemplate>" .. template .. "\n\n<GitDiff>\n" .. diff .. "\n</GitDiff>\n\nコミットメッセージのみを英語で出力してください。" }
         },
         max_tokens = M.options.max_tokens
     }
 
-    local response = curl.post("https://" .. service .. "." .. aws_region .. ".amazonaws.com/model/" .. M.options.model_id .. "/invoke", {
+    local response = curl.post("https://" .. "bedrock-runtime" .. "." .. aws_region .. ".amazonaws.com/model/" .. M.options.model_id .. "/invoke", {
         headers = {
             ["Content-Type"] = "application/json"
         },
         body = vim.fn.json_encode(payload),
-        raw = { "--sigv4", "aws:amz:" .. aws_region .. ":" .. service, "--user", aws_access_key .. ":" .. aws_secret_key }
+        raw = { "--aws-sigv4", "aws:amz:" .. aws_region .. ":" .. service, "--user", aws_access_key .. ":" .. aws_secret_key }
     })
 
     if response and response.body then
-        return response.body
-    else
-        return "Failed to get response"
+        local decoded = vim.json.decode(response.body)
+        if decoded and decoded.content and #decoded.content > 0 then
+            return decoded.content[1].text
+        end
     end
+    return "Failed to get response"
 end
 
 local function get_git_diff()
