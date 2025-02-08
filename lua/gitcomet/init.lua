@@ -58,14 +58,41 @@ local function request_commit_message(diff)
 end
 
 local function get_git_diff()
-    local handle = io.popen("git diff --cached")
+    local handle = io.popen("git diff --cached --stat")
     if handle then
-        local result = handle:read("*a")
+        local stat = handle:read("*a")
         handle:close()
-        return result
-    else
-        return "Failed to get git diff"
+
+        -- Get a summary of changes
+        handle = io.popen("git diff --cached --numstat")
+        if handle then
+            local numstat = handle:read("*a")
+            handle:close()
+
+            -- Parse numstat to get total lines added/removed
+            local total_added, total_removed = 0, 0
+            for added, removed in numstat:gmatch("(%d+)%s+(%d+)") do
+                total_added = total_added + tonumber(added)
+                total_removed = total_removed + tonumber(removed)
+            end
+
+            local summary = string.format("Total: %d lines added, %d lines removed\n", total_added, total_removed)
+
+            -- If the diff is too large, return only the summary and stats
+            if total_added + total_removed > 1000 then
+                return summary .. stat
+            end
+        end
+
+        -- If the diff is not too large, get the full diff
+        handle = io.popen("git diff --cached")
+        if handle then
+            local full_diff = handle:read("*a")
+            handle:close()
+            return full_diff
+        end
     end
+    return "Failed to get git diff"
 end
 
 function M.generate_commit_message()
